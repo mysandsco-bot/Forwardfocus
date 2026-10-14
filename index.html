@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FF Driver</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2E3236">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FF Driver">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --asphalt:#2E3236; --asphalt-2:#41464B; --paper:#F7F7F4; --ink:#1F2326;
+  --line:#D5D6D2; --muted:#6B7176; --yellow:#FFC20E; --yellow-ink:#3A2E00;
+  --red:#C21F32; --red-bg:#FBE9EB; --green:#1E7B4F; --green-bg:#E6F3EC; --amber-bg:#FFF4CC;
+  --body:'Barlow',system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --head:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--asphalt);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.45}
+body{padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+.wrap{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+header{color:#fff;padding:18px 20px 14px;display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+header h1{font-family:var(--head);font-weight:700;font-size:30px;line-height:1;margin:0;letter-spacing:.01em}
+header h1 small{display:block;font-family:var(--body);font-weight:400;font-size:14px;color:#C9CDD1;margin-top:4px;letter-spacing:0}
+.plate{font-family:var(--head);font-weight:700;font-size:22px;background:var(--yellow);color:var(--yellow-ink);
+  padding:4px 10px;border-radius:4px;border:2px solid #1f1f1f;white-space:nowrap}
+main{flex:1;background:var(--paper);border-radius:18px 18px 0 0;padding:22px 20px 32px}
+.hidden{display:none!important}
+h2{font-family:var(--head);font-weight:700;font-size:26px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 18px;font-size:15px}
+label{display:block;font-weight:600;font-size:15px;margin:14px 0 6px}
+label .zh{font-weight:400;color:var(--muted);margin-left:6px}
+input{width:100%;font:inherit;font-size:19px;padding:12px 14px;border:2px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+input:focus{outline:none;border-color:var(--asphalt)}
+button{font:inherit;cursor:pointer;border:0}
+.btn{width:100%;padding:16px;border-radius:12px;font-family:var(--head);font-weight:700;font-size:22px;letter-spacing:.02em}
+.btn-dark{background:var(--asphalt);color:#fff}
+.btn-yellow{background:var(--yellow);color:var(--yellow-ink);border:2px solid #1f1f1f}
+.btn-ghost{background:transparent;color:var(--asphalt);border:2px solid var(--line);font-size:19px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,input:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+.stack>*+*{margin-top:12px}
+
+/* 拍照区 */
+.shoot{display:block;width:100%;aspect-ratio:4/3;border-radius:16px;border:3px dashed #9AA0A5;background:#fff;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--asphalt);cursor:pointer}
+.shoot svg{width:64px;height:64px}
+.shoot b{font-family:var(--head);font-size:26px}
+.shoot span{color:var(--muted);font-size:15px}
+.thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.thumb{position:relative;aspect-ratio:3/4;border-radius:10px;overflow:hidden;background:#ddd}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.thumb button{position:absolute;top:6px;right:6px;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;font-size:18px;line-height:30px}
+.addmore{aspect-ratio:3/4;border-radius:10px;border:2px dashed #9AA0A5;background:#fff;color:var(--muted);font-size:15px;display:flex;align-items:center;justify-content:center;text-align:center;padding:6px}
+
+/* 结果：像磅单的纸 */
+.ticket{background:#fff;border:1px solid var(--line);border-radius:12px;padding:6px 16px 16px;margin-bottom:16px;
+  background-image:repeating-linear-gradient(transparent 0 0);position:relative}
+.ticket label{margin-top:12px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tons input{font-family:var(--head);font-size:30px;font-weight:700}
+.monthline{margin-top:12px;color:var(--muted);font-size:15px}
+.monthline b{color:var(--ink)}
+.note{border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:15px}
+.note.warn{background:var(--amber-bg);border-left:5px solid var(--yellow)}
+.note.bad{background:var(--red-bg);border-left:5px solid var(--red);color:#5c0b15}
+.note ul{margin:6px 0 0;padding-left:18px}
+.note b{display:block}
+
+select{width:100%;font:inherit;font-size:19px;padding:12px 14px;border:2px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);appearance:auto}
+select:focus{outline:none;border-color:var(--asphalt)}
+.price{margin-top:16px;border-top:2px dashed var(--line);padding-top:6px}
+.price .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.price .val{font-family:var(--head);font-weight:700;font-size:22px;padding:10px 0 2px}
+.price .lab{font-size:13px;color:var(--muted)}
+.price .tot{display:flex;justify-content:space-between;align-items:baseline;margin-top:12px;padding:10px 12px;background:#F1F2EE;border-radius:10px}
+.price .tot b{font-family:var(--head);font-size:24px}
+.newroute{background:var(--amber-bg);border-radius:10px;padding:10px 12px;margin-top:10px;font-size:15px}
+.checking{color:var(--muted);font-size:14px;margin-top:8px}
+
+/* 状态 */
+.busy{display:flex;flex-direction:column;align-items:center;gap:14px;padding:50px 0;text-align:center}
+.spin{width:52px;height:52px;border-radius:50%;border:6px solid var(--line);border-top-color:var(--yellow);animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:3s}}
+.done{text-align:center;padding:30px 0 10px}
+.done .tick{width:84px;height:84px;border-radius:50%;background:var(--green);margin:0 auto 16px;display:flex;align-items:center;justify-content:center}
+.done .tick svg{width:46px;height:46px}
+.err{background:var(--red-bg);color:#5c0b15;border-radius:10px;padding:12px 14px;margin-top:14px;font-size:15px}
+.today{margin-top:26px;border-top:1px solid var(--line);padding-top:14px}
+.today h3{font-family:var(--head);font-size:20px;margin:0 0 8px}
+.today li{list-style:none;display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #ecece8;font-size:15px}
+.today ul{margin:0;padding:0}
+.linkbtn{background:none;color:#C9CDD1;text-decoration:underline;font-size:14px;padding:4px 0}
+
+/* 主页 */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tile{background:var(--asphalt);color:#fff;border-radius:14px;padding:18px 16px;text-align:left;min-height:118px;display:flex;flex-direction:column;justify-content:space-between}
+.tile b{font-family:var(--head);font-size:24px;line-height:1.05}
+.tile span{font-size:14px;color:#C9CDD1;line-height:1.3}
+.tile.trip{background:var(--yellow);color:var(--yellow-ink);border:2px solid #1f1f1f;grid-column:1/-1;min-height:96px}
+.tile.trip span{color:#5a4a00}
+.back{background:none;color:var(--muted);font-size:15px;padding:0 0 12px;text-decoration:underline}
+.pbox .shoot{aspect-ratio:auto;min-height:150px}
+.galbtn{background:none;color:var(--asphalt);text-decoration:underline;font-size:15px;padding:10px 0 0}
+input[type=date]{min-height:52px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg button{padding:14px 8px;border-radius:10px;border:2px solid var(--line);background:#fff;font-weight:600;font-size:16px;color:var(--ink)}
+.seg button[aria-pressed=true]{background:var(--asphalt);border-color:var(--asphalt);color:#fff}
+.kind{font-size:12px;color:var(--muted);margin-right:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>FF Driver<small>Record app · 司机记录</small></h1>
+    <div style="text-align:right">
+      <div id="plate" class="plate hidden"></div>
+      <button id="logout" class="linkbtn hidden" type="button">Log out 退出</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- 登入 -->
+    <section id="vLogin">
+      <h2>Select lorry 选择车牌</h2>
+      <p class="sub">Choose your lorry to start. 选择车牌进入。</p>
+      <label for="wid">Lorry <span class="zh">车牌</span></label>
+      <select id="wid"><option value="">Loading… 加载中…</option></select>
+      <div class="stack" style="margin-top:22px">
+        <button id="btnLogin" class="btn btn-dark" type="button">Continue 进入</button>
+      </div>
+      <div id="loginErr" class="err hidden"></div>
+    </section>
+
+    <!-- 主页 -->
+    <section id="vHome" class="hidden">
+      <h2 id="hello">Hi</h2>
+      <p class="sub">What do you want to record? 要记录什么？</p>
+      <div class="tiles">
+        <button class="tile trip" type="button" data-go="trip"><b>Trip 载货</b><span>Photo of DO / weighbridge ticket 拍 DO / 磅单</span></button>
+        <button class="tile" type="button" data-go="fuel"><b>Petrol / Diesel 油</b><span>Photo of receipt 拍收据</span></button>
+        <button class="tile" type="button" data-go="wash"><b>Wash lorry 洗车</b><span>Date · photo 日期 · 照片</span></button>
+        <button class="tile" type="button" data-go="status" style="grid-column:1/-1;min-height:96px"><b>Repair / Leave 修车 / 请假</b><span>From · to · note 开始 · 结束 · 备注</span></button>
+      </div>
+      <div id="today" class="today hidden">
+        <h3>Sent today 今天已提交</h3>
+        <ul id="todayList"></ul>
+      </div>
+    </section>
+
+    <!-- Trip 拍照 -->
+    <section id="vTrip" class="hidden">
+      <button class="back" type="button" data-home>← Menu 主页</button>
+      <h2>Trip 载货</h2>
+      <p class="sub">Take photos of the DO and weighbridge ticket. Make sure all text is clear. 拍 DO 和磅单，字要清楚。</p>
+      <div id="pTrip" class="pbox"></div>
+      <div class="stack" style="margin-top:18px">
+        <button id="btnRead" class="btn btn-yellow" type="button" disabled>Read photo 识别</button>
+      </div>
+      <div id="tripErr" class="err hidden"></div>
+    </section>
+
+    <!-- 识别中 -->
+    <section id="vBusy" class="hidden">
+      <div class="busy"><div class="spin" aria-hidden="true"></div>
+        <div><b>Reading photo… 识别中…</b><br><span class="sub">About 10–20 seconds 约 10–20 秒</span></div>
+      </div>
+    </section>
+
+    <!-- Trip 确认 -->
+    <section id="vReview" class="hidden">
+      <h2>Check details 检查资料</h2>
+      <p class="sub">Fix anything wrong, then submit. 有错可以直接改，然后提交。</p>
+      <div id="notes"></div>
+      <div class="ticket">
+        <div class="row2">
+          <div><label for="f_vehicle">Lorry <span class="zh">车牌</span></label><select id="f_vehicle"></select></div>
+          <div><label for="f_date">Date <span class="zh">日期</span></label><input id="f_date" inputmode="numeric" placeholder="DD.MM.YYYY"></div>
+        </div>
+        <label for="f_from">From <span class="zh">出货地点</span></label><input id="f_from" list="sites" autocapitalize="characters">
+        <label for="f_to">To <span class="zh">送货地点</span></label><input id="f_to" list="sites" autocapitalize="characters">
+        <datalist id="sites"></datalist>
+        <label for="f_do">DO / ticket no. <span class="zh">单号</span></label><input id="f_do" autocapitalize="characters">
+        <div class="tons"><label for="f_tons">Tons <span class="zh">吨</span></label><input id="f_tons" inputmode="decimal"></div>
+        <div class="monthline">Month 月份 <b id="f_month">–</b></div>
+      </div>
+      <div class="stack">
+        <button id="btnSend" class="btn btn-dark" type="button">Submit 提交</button>
+        <button id="btnRetake" class="btn btn-ghost" type="button">Retake photo 重拍</button>
+      </div>
+      <div id="sendErr" class="err hidden"></div>
+    </section>
+
+    <!-- 油 -->
+    <section id="vFuel" class="hidden">
+      <button class="back" type="button" data-home>← Menu 主页</button>
+      <h2>Petrol / Diesel 油</h2>
+      <p class="sub">Take a photo of the receipt, then read it. 拍收据，再按识别。</p>
+      <div id="pFuel" class="pbox"></div>
+      <div class="stack" style="margin-top:14px">
+        <button id="btnReadFuel" class="btn btn-yellow" type="button" disabled>Read receipt 识别收据</button>
+      </div>
+      <div id="fuelNotes" style="margin-top:14px"></div>
+      <div class="ticket" style="margin-top:14px">
+        <label for="u_date">Date <span class="zh">日期</span></label><input id="u_date" type="date">
+        <label for="u_station">Station <span class="zh">油站</span></label>
+        <select id="u_station"><option value="">Select 选择…</option><option>PETRONAS</option><option>SHELL</option><option>PETRON</option><option>BHP</option><option>CALTEX</option><option>OTHER</option></select>
+        <div class="row2">
+          <div><label for="u_litres">Litres <span class="zh">升</span></label><input id="u_litres" inputmode="decimal"></div>
+          <div><label for="u_total">Total RM <span class="zh">总价</span></label><input id="u_total" inputmode="decimal"></div>
+        </div>
+        <div class="monthline">RM / litre 每升 <b id="u_rpl">–</b></div>
+      </div>
+      <button id="btnSendFuel" class="btn btn-dark" type="button">Submit 提交</button>
+      <div id="fuelErr" class="err hidden"></div>
+    </section>
+
+    <!-- 洗车 -->
+    <section id="vWash" class="hidden">
+      <button class="back" type="button" data-home>← Menu 主页</button>
+      <h2>Wash lorry 洗车</h2>
+      <div class="ticket">
+        <label for="w_date">Date <span class="zh">日期</span></label><input id="w_date" type="date">
+        <div class="row2">
+          <div><label for="w_loc">Location <span class="zh">地点</span></label><input id="w_loc" value="SS" autocapitalize="characters"></div>
+          <div><label for="w_amt">Amount RM <span class="zh">金额</span></label><input id="w_amt" value="2.50" inputmode="decimal"></div>
+        </div>
+      </div>
+      <div id="pWash" class="pbox"></div>
+      <div style="margin-top:16px"><button id="btnSendWash" class="btn btn-dark" type="button">Submit 提交</button></div>
+      <div id="washErr" class="err hidden"></div>
+    </section>
+
+    <!-- 修车 / 请假 -->
+    <section id="vStatus" class="hidden">
+      <button class="back" type="button" data-home>← Menu 主页</button>
+      <h2>Repair / Leave 修车 / 请假</h2>
+      <div class="seg" role="group" aria-label="Type">
+        <button type="button" id="t_repair" aria-pressed="true">Lorry repair 修车</button>
+        <button type="button" id="t_leave" aria-pressed="false">On leave 请假</button>
+      </div>
+      <div class="ticket" style="margin-top:14px">
+        <div class="row2">
+          <div><label for="s_from">From <span class="zh">开始</span></label><input id="s_from" type="date"></div>
+          <div><label for="s_to">To <span class="zh">结束</span></label><input id="s_to" type="date"></div>
+        </div>
+        <div class="monthline">Days 天数 <b id="s_days">1</b></div>
+        <label for="s_note">Note <span class="zh">备注</span></label><input id="s_note" placeholder="e.g. change tyre 换轮胎">
+        <div id="costBox"><label for="s_cost">Repair cost RM <span class="zh">修车费（可不填）</span></label><input id="s_cost" inputmode="decimal"></div>
+      </div>
+      <p class="sub" style="margin:0 0 8px">Photo (optional) 照片（可不拍）</p>
+      <div id="pStatus" class="pbox"></div>
+      <div style="margin-top:16px"><button id="btnSendStatus" class="btn btn-dark" type="button">Submit 提交</button></div>
+      <div id="statusErr" class="err hidden"></div>
+    </section>
+
+    <!-- 完成 -->
+    <section id="vDone" class="hidden">
+      <div class="done">
+        <div class="tick"><svg viewBox="0 0 48 48" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 25l9 9 17-19"/></svg></div>
+        <h2>Submitted 已提交</h2>
+        <p class="sub" id="doneText"></p>
+      </div>
+      <div class="stack">
+        <button id="btnAgain" class="btn btn-yellow" type="button">Record another 再记一笔</button>
+        <button class="btn btn-ghost" type="button" data-home>Menu 主页</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<input id="cam" type="file" accept="image/*" capture="environment" class="hidden">
+<input id="gal" type="file" accept="image/*" multiple class="hidden">
+
+<script>
+/* ====== 设定：把 Apps Script 的 Web app 网址（/exec 结尾）贴在这里 ====== */
+const API_URL = 'https://script.google.com/macros/s/AKfycbxX-1Kb14JpLdrOmrGY6Pqq4cROZOVu2QUEtEG1npM7sUHspNCfFz1ANe4F8fbpmACl/exec';
+let INIT = null;
+</script>
+<script>
+const $ = id => document.getElementById(id);
+const views = ['vLogin','vHome','vTrip','vBusy','vReview','vFuel','vWash','vStatus','vDone'];
+let me = null, opts = null, creds = null, lastResult = null, todayItems = [], route = null, lookTimer = null;
+let current = 'trip', statusType = 'Lorry Repair';
+
+function show(v){ views.forEach(x => $(x).classList.toggle('hidden', x !== v)); window.scrollTo(0,0); }
+function err(el, msg){ $(el).textContent = msg; $(el).classList.remove('hidden'); }
+function clearErr(el){ $(el).classList.add('hidden'); }
+function store(k,v){ try{ v===null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+function load(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
+async function call(fn, ...args){
+  if(API_URL.indexOf('/exec') < 0) throw new Error('API_URL not set. 还没设定网址。');
+  let r;
+  try{
+    r = await fetch(API_URL, { method:'POST', redirect:'follow',
+      headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify({ fn, args }) });
+  }catch(e){ throw new Error('No internet connection. Please try again. 没有网络，请再试。'); }
+  if(!r.ok) throw new Error('Server error ' + r.status + '. Please try again. 系统忙，请再试。');
+  const j = await r.json();
+  if(!j.ok) throw new Error(String(j.error || 'Error').replace(/^Error:\s*/,''));
+  return j.data;
+}
+const money = v => (v !== '' && v != null && isFinite(v) ? Number(v).toFixed(2) : '–');
+function todayIso(){ const d = new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
+function isoFromDmy(s){ const m = String(s||'').match(/^(\d{2})\.(\d{2})\.(\d{4})$/); return m ? m[3]+'-'+m[2]+'-'+m[1] : ''; }
+function strip(p){ return p.map(x => ({data:x.data, mime:x.mime})); }
+
+/* ---------- 照片组件 ---------- */
+let activeSet = null;
+function compress(file){
+  return new Promise((ok, no) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      const s = Math.min(1, 1280 / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      const dataUrl = c.toDataURL('image/jpeg', 0.8);
+      ok({ preview: dataUrl, data: dataUrl.split(',')[1], mime: 'image/jpeg' });
+    };
+    img.onerror = () => no(new Error('Not an image file. 不是图片。'));
+    img.src = url;
+  });
+}
+function PhotoSet(boxId, max, errId, onChange){
+  this.box = $(boxId); this.max = max; this.errId = errId; this.onChange = onChange || (()=>{}); this.photos = [];
+  this.render();
+}
+PhotoSet.prototype.render = function(){
+  const b = this.box; b.innerHTML = '';
+  if(!this.photos.length){
+    const big = document.createElement('button'); big.type = 'button'; big.className = 'shoot';
+    big.innerHTML = '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" aria-hidden="true"><path d="M8 20h12l5-7h14l5 7h12v31H8z"/><circle cx="32" cy="35" r="10"/></svg><b>Take photo 拍照</b><span>'
+      + (this.max > 1 ? 'Up to ' + this.max + ' photos 最多 ' + this.max + ' 张' : '1 photo 一张') + '</span>';
+    big.onclick = () => this.pick('cam'); b.appendChild(big);
+  } else {
+    const g = document.createElement('div'); g.className = 'thumbs';
+    this.photos.forEach((p,i) => {
+      const d = document.createElement('div'); d.className = 'thumb';
+      d.innerHTML = '<img alt="Photo '+(i+1)+'"><button type="button" aria-label="Remove photo">×</button>';
+      d.querySelector('img').src = p.preview;
+      d.querySelector('button').onclick = () => { this.photos.splice(i,1); this.render(); };
+      g.appendChild(d);
+    });
+    if(this.photos.length < this.max){
+      const a = document.createElement('button'); a.type='button'; a.className='addmore'; a.textContent='+ Add photo 加照片';
+      a.onclick = () => this.pick('cam'); g.appendChild(a);
+    }
+    b.appendChild(g);
+  }
+  if(this.photos.length < this.max){
+    const gl = document.createElement('button'); gl.type='button'; gl.className='galbtn'; gl.textContent='Choose from gallery 从相册选';
+    gl.onclick = () => this.pick('gal'); b.appendChild(gl);
+  }
+  this.onChange(this.photos.length);
+};
+PhotoSet.prototype.pick = function(which){ activeSet = this; $(which).click(); };
+PhotoSet.prototype.add = async function(files){
+  if(this.errId) clearErr(this.errId);
+  for(const f of Array.from(files)){
+    if(this.photos.length >= this.max){ if(this.errId) err(this.errId, 'Max ' + this.max + ' photos. 最多 ' + this.max + ' 张。'); break; }
+    try{ this.photos.push(await compress(f)); }catch(e){ if(this.errId) err(this.errId, e.message); }
+  }
+  this.render();
+};
+PhotoSet.prototype.clear = function(){ this.photos = []; this.render(); };
+['cam','gal'].forEach(id => $(id).onchange = e => { if(activeSet) activeSet.add(e.target.files); e.target.value=''; });
+
+const pTrip = new PhotoSet('pTrip', 3, 'tripErr', n => $('btnRead').disabled = !n);
+const pFuel = new PhotoSet('pFuel', 2, 'fuelErr', n => $('btnReadFuel').disabled = !n);
+const pWash = new PhotoSet('pWash', 1, 'washErr');
+const pStatus = new PhotoSet('pStatus', 2, 'statusErr');
+
+/* ---------- 登入 / 主页 ---------- */
+async function doLogin(id, silent){
+  try{
+    let res = null;
+    const w = INIT && (INIT.workers||[]).find(x => String(x.workerId).toUpperCase() === String(id).toUpperCase());
+    if(w) res = Object.assign({}, INIT, { worker: w });      // 不用再问服务器，马上进入
+    else res = await call('login', id, '');
+    me = res.worker; opts = res; fillOptions();
+    creds = {id, pin:''}; store('ff_creds', creds);
+    $('plate').textContent = me.vehicle || me.workerId;
+    $('plate').classList.remove('hidden'); $('logout').classList.remove('hidden');
+    $('hello').textContent = 'Hi, ' + (me.name || me.workerId);
+    todayItems = (load('ff_today_' + todayIso()) || []); renderToday();
+    show('vHome');
+  }catch(e){
+    store('ff_creds', null);
+    if(!silent){ err('loginErr', e.message); } show('vLogin');
+  }
+}
+$('btnLogin').onclick = () => { clearErr('loginErr');
+  if(!$('wid').value){ err('loginErr','Please select your lorry. 请选择车牌。'); return; }
+  doLogin($('wid').value); };
+$('logout').onclick = () => { store('ff_creds', null); me = creds = null;
+  $('plate').classList.add('hidden'); $('logout').classList.add('hidden'); show('vLogin'); };
+
+function openModule(m){
+  current = m;
+  if(m === 'trip'){ pTrip.clear(); clearErr('tripErr'); show('vTrip'); }
+  if(m === 'fuel'){ pFuel.clear(); ['u_litres','u_total'].forEach(i => $(i).value=''); $('u_station').value=''; $('u_date').value = todayIso();
+    $('fuelNotes').innerHTML=''; fuelRpl(); clearErr('fuelErr'); show('vFuel'); }
+  if(m === 'wash'){ pWash.clear(); $('w_date').value = todayIso(); clearErr('washErr'); show('vWash'); }
+  if(m === 'status'){ pStatus.clear(); $('s_from').value = $('s_to').value = todayIso(); $('s_note').value=''; $('s_cost').value='';
+    setType('Lorry Repair'); calcDays(); clearErr('statusErr'); show('vStatus'); }
+}
+document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => openModule(b.dataset.go));
+document.querySelectorAll('[data-home]').forEach(b => b.onclick = () => show('vHome'));
+$('btnAgain').onclick = () => openModule(current);
+
+function addToday(kind, text){
+  todayItems.unshift({kind, text}); store('ff_today_' + todayIso(), todayItems); renderToday();
+}
+function renderToday(){
+  const ul = $('todayList'); ul.innerHTML = '';
+  todayItems.forEach(t => { const li = document.createElement('li');
+    const k = document.createElement('span'); k.className='kind'; k.textContent = t.kind;
+    const a = document.createElement('span'); a.style.flex='1'; a.textContent = t.text || '';
+    li.append(k, a); ul.appendChild(li); });
+  $('today').classList.toggle('hidden', !todayItems.length);
+}
+function done(kind, text){ $('doneText').textContent = text; addToday(kind, text); show('vDone'); }
+
+function fillOptions(){
+  const vs = $('f_vehicle'); vs.innerHTML = '';
+  (opts.vehicles||[]).forEach(v => { const o = document.createElement('option'); o.value = o.textContent = v; vs.appendChild(o); });
+  const dl = $('sites'); dl.innerHTML = '';
+  (opts.sites||[]).forEach(x => { const o = document.createElement('option'); o.value = x; dl.appendChild(o); });
+}
+
+/* ---------- Trip ---------- */
+$('btnRead').onclick = async () => {
+  clearErr('tripErr'); show('vBusy');
+  try{ lastResult = await call('recognize', creds.id, creds.pin, strip(pTrip.photos)); fillReview(lastResult); show('vReview'); }
+  catch(e){ show('vTrip'); err('tripErr', e.message); }
+};
+function fillReview(r){
+  const vlist = opts.vehicles || [];
+  $('f_vehicle').value = vlist.indexOf(r.vehicle) >= 0 ? r.vehicle : (me.vehicle || vlist[0] || '');
+  $('f_date').value = r.date || '';
+  $('f_from').value = r.from_site || ''; $('f_to').value = r.to_site || '';
+  $('f_do').value = r.do_no || ''; $('f_tons').value = (r.tons === '' || r.tons == null) ? '' : Number(r.tons).toFixed(2);
+  updMonth();
+  const n = $('notes'); n.innerHTML = '';
+  if(r.duplicate){
+    const d = document.createElement('div'); d.className='note bad';
+    d.innerHTML = '<b>Already recorded 已经记录过</b>';
+    d.append('DO ' + r.duplicate.do_no + ' already exists: ' + r.duplicate.vehicle + ', ' + r.duplicate.date + '. Do not submit again. 不要重复提交。');
+    n.appendChild(d);
+  }
+  issuesNote(n, r.issues);
+  $('btnSend').disabled = !!r.duplicate; clearErr('sendErr');
+}
+function issuesNote(container, issues){
+  if(!issues || !issues.length) return;
+  const d = document.createElement('div'); d.className='note warn';
+  d.innerHTML = '<b>Please check 请检查</b><ul></ul>';
+  issues.forEach(t => { const li = document.createElement('li'); li.textContent = t; d.querySelector('ul').appendChild(li); });
+  container.appendChild(d);
+}
+function updMonth(){
+  const m = $('f_date').value.trim().match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})$/);
+  $('f_month').textContent = m ? m[3] + '-' + ('0'+m[2]).slice(-2) : '–';
+}
+$('f_date').addEventListener('input', updMonth);
+$('f_do').addEventListener('input', () => { if(lastResult && lastResult.duplicate) $('btnSend').disabled = false; });
+$('btnRetake').onclick = () => openModule('trip');
+
+$('btnSend').onclick = async () => {
+  clearErr('sendErr');
+  const data = { vehicle:$('f_vehicle').value, date:$('f_date').value, from_site:$('f_from').value,
+    to_site:$('f_to').value, do_no:$('f_do').value, tons:$('f_tons').value };
+  busyBtn('btnSend', true);
+  try{
+    const res = await call('submitTrip', creds.id, creds.pin, data, strip(pTrip.photos));
+    done('Trip', data.do_no.toUpperCase() + ', ' + Number(data.tons).toFixed(2) + ' tons');
+  }catch(e){ err('sendErr', e.message); }
+  finally{ busyBtn('btnSend', false); }
+};
+function busyBtn(id, on){ const b = $(id); b.disabled = on; b.textContent = on ? 'Submitting… 提交中…' : 'Submit 提交'; }
+
+/* ---------- 油 ---------- */
+function fuelRpl(){ const l = parseFloat($('u_litres').value), t = parseFloat($('u_total').value);
+  $('u_rpl').textContent = (l>0 && t>0) ? 'RM ' + (t/l).toFixed(2) : '–'; }
+['u_litres','u_total'].forEach(id => $(id).addEventListener('input', fuelRpl));
+$('btnReadFuel').onclick = async () => {
+  clearErr('fuelErr'); const b = $('btnReadFuel'); b.disabled = true; b.textContent = 'Reading… 识别中…';
+  try{
+    const r = await call('recognizeFuel', creds.id, creds.pin, strip(pFuel.photos));
+    if(r.date) $('u_date').value = isoFromDmy(r.date) || $('u_date').value;
+    if(r.station){ const ok = [...$('u_station').options].some(o => o.value === r.station); $('u_station').value = ok ? r.station : 'OTHER'; }
+    if(r.litres !== '') $('u_litres').value = r.litres;
+    if(r.total_rm !== '') $('u_total').value = Number(r.total_rm).toFixed(2);
+    fuelRpl();
+    const n = $('fuelNotes'); n.innerHTML = '';
+    if(r.duplicate){ const d = document.createElement('div'); d.className='note bad';
+      d.innerHTML = '<b>Already recorded 已经记录过</b>This receipt seems to be in the sheet already. 这张收据好像已经记录过。'; n.appendChild(d); }
+    issuesNote(n, r.issues);
+  }catch(e){ err('fuelErr', e.message); }
+  finally{ b.disabled = !pFuel.photos.length; b.textContent = 'Read receipt 识别收据'; }
+};
+$('btnSendFuel').onclick = async () => {
+  clearErr('fuelErr');
+  const data = { date:$('u_date').value, station:$('u_station').value, litres:$('u_litres').value, total_rm:$('u_total').value };
+  if(!data.date || !data.station || !(parseFloat(data.litres)>0) || !(parseFloat(data.total_rm)>0)){ err('fuelErr','Please fill in all fields. 请填好所有栏位。'); return; }
+  if(!pFuel.photos.length){ err('fuelErr','Please take a photo of the receipt. 请拍收据。'); return; }
+  busyBtn('btnSendFuel', true);
+  try{ const res = await call('submitFuel', creds.id, creds.pin, data, strip(pFuel.photos)); done('Fuel', res.summary); }
+  catch(e){ err('fuelErr', e.message); }
+  finally{ busyBtn('btnSendFuel', false); }
+};
+
+/* ---------- 洗车 ---------- */
+$('btnSendWash').onclick = async () => {
+  clearErr('washErr');
+  const data = { date:$('w_date').value, location:$('w_loc').value, amount:$('w_amt').value };
+  if(!data.date || !data.location.trim() || !(parseFloat(data.amount)>0)){ err('washErr','Please fill in all fields. 请填好所有栏位。'); return; }
+  if(!pWash.photos.length){ err('washErr','Please take a photo. 请拍照。'); return; }
+  busyBtn('btnSendWash', true);
+  try{ const res = await call('submitWash', creds.id, creds.pin, data, strip(pWash.photos)); done('Wash', res.summary); }
+  catch(e){ err('washErr', e.message); }
+  finally{ busyBtn('btnSendWash', false); }
+};
+
+/* ---------- 修车 / 请假 ---------- */
+function setType(t){
+  statusType = t;
+  $('t_repair').setAttribute('aria-pressed', t === 'Lorry Repair'); $('t_leave').setAttribute('aria-pressed', t === 'On Leave');
+  $('costBox').classList.toggle('hidden', t !== 'Lorry Repair');
+}
+$('t_repair').onclick = () => setType('Lorry Repair');
+$('t_leave').onclick = () => setType('On Leave');
+function calcDays(){
+  const a = Date.parse($('s_from').value), b = Date.parse($('s_to').value);
+  $('s_days').textContent = (a && b && b >= a) ? Math.round((b-a)/86400000) + 1 : '–';
+}
+$('s_from').addEventListener('change', () => { if(!$('s_to').value || $('s_to').value < $('s_from').value) $('s_to').value = $('s_from').value; calcDays(); });
+$('s_to').addEventListener('change', calcDays);
+$('btnSendStatus').onclick = async () => {
+  clearErr('statusErr');
+  const data = { type:statusType, fromDate:$('s_from').value, toDate:$('s_to').value, note:$('s_note').value, cost:$('s_cost').value };
+  if(!data.fromDate || !data.toDate || data.toDate < data.fromDate){ err('statusErr','Please check the dates. 请检查日期。'); return; }
+  busyBtn('btnSendStatus', true);
+  try{ const res = await call('submitStatus', creds.id, creds.pin, data, strip(pStatus.photos)); done(statusType === 'On Leave' ? 'Leave' : 'Repair', res.summary); }
+  catch(e){ err('statusErr', e.message); }
+  finally{ busyBtn('btnSendStatus', false); }
+};
+
+/* ---------- 开始 ---------- */
+const saved = load('ff_creds');
+function fillWorkers(list){
+  const sel = $('wid'); sel.innerHTML = '<option value="">Select 选择…</option>';
+  list.forEach(w => { const o = document.createElement('option'); o.value = w.workerId; o.textContent = w.vehicle; sel.appendChild(o); });
+  if(saved && saved.id) sel.value = saved.id;
+}
+// 先用上次存的资料马上打开，同时在背后更新
+INIT = load('ff_init');
+if(INIT && INIT.workers){ fillWorkers(INIT.workers); if(saved && saved.id) doLogin(saved.id, true); }
+call('init').then(d => {
+  INIT = d; store('ff_init', d);
+  if(!me){ fillWorkers(d.workers); if(saved && saved.id) doLogin(saved.id, true); }
+  else { opts = Object.assign({}, d, { worker: me }); fillOptions(); }
+}).catch(e => { if(!INIT) $('wid').innerHTML = '<option value="">' + e.message + '</option>'; });
+</script>
+</body>
+</html>
