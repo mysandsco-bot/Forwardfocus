@@ -115,6 +115,20 @@ input[type=date]{min-height:52px}
 .seg button{padding:14px 8px;border-radius:10px;border:2px solid var(--line);background:#fff;font-weight:600;font-size:16px;color:var(--ink)}
 .seg button[aria-pressed=true]{background:var(--asphalt);border-color:var(--asphalt);color:#fff}
 .kind{font-size:12px;color:var(--muted);margin-right:6px}
+
+.bcard{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+.bcard.ok{border-color:var(--green);background:var(--green-bg)}
+.bcard.bad{border-color:var(--red)}
+.btop{display:flex;gap:12px;align-items:flex-start}
+.btop img{width:84px;height:110px;object-fit:cover;border-radius:8px;background:#ddd;flex:0 0 auto}
+.btop .bt{flex:1;min-width:0}
+.btop .bt b{font-family:var(--head);font-size:20px}
+.bcard label{margin:8px 0 4px;font-size:13px}
+.bcard input,.bcard select{font-size:16px;padding:9px 10px}
+.bstat{font-size:14px;margin-top:8px}
+.bstat.okt{color:var(--green)} .bstat.errt{color:var(--red)}
+.bskip{display:flex;align-items:center;gap:8px;font-size:14px;margin-top:8px;color:var(--muted)}
+.bskip input{width:auto;min-height:0}
 </style>
 </head>
 <body>
@@ -146,8 +160,10 @@ input[type=date]{min-height:52px}
       <p class="sub">What do you want to record? 要记录什么？</p>
       <div class="tiles">
         <button class="tile trip" type="button" data-go="trip"><b>Trip 载货</b><span>Photo of DO / weighbridge ticket 拍 DO / 磅单</span></button>
+        <button class="tile trip" type="button" data-go="batch" style="background:#FFE38A"><b>Batch trips 批量载货</b><span>Up to 5 trips at once · 1 photo = 1 trip 一次最多 5 趟，一张照片一趟</span></button>
         <button class="tile" type="button" data-go="fuel"><b>Petrol / Diesel 油</b><span>Photo of receipt 拍收据</span></button>
         <button class="tile" type="button" data-go="wash"><b>Wash lorry 洗车</b><span>Date · photo 日期 · 照片</span></button>
+        <a id="adminTile" class="tile hidden" href="admin.html" style="grid-column:1/-1;min-height:84px;background:#1E7B4F;text-decoration:none"><b>Check &amp; fix 检查修改</b><span>Admin only · billing, material, price, edit, delete 补资料、改错、删除</span></a>
         <button class="tile" type="button" data-go="status" style="grid-column:1/-1;min-height:96px"><b>Repair / Leave 修车 / 请假</b><span>From · to · note 开始 · 结束 · 备注</span></button>
       </div>
       <div id="today" class="today hidden">
@@ -169,9 +185,32 @@ input[type=date]{min-height:52px}
     </section>
 
     <!-- 识别中 -->
+    <!-- 批量 -->
+    <section id="vBatch" class="hidden">
+      <button class="back" type="button" data-home>← Menu 主页</button>
+      <h2>Batch trips 批量载货</h2>
+      <p class="sub">Choose up to 5 photos. Each photo must show ONE trip (DO + weighbridge together). 最多 5 张，每张照片只拍一趟（DO 和磅单放在一起拍）。</p>
+      <div id="pBatch" class="pbox"></div>
+      <div class="stack" style="margin-top:18px">
+        <button id="btnReadBatch" class="btn btn-yellow" type="button" disabled>Read all 全部识别</button>
+      </div>
+      <div id="batchErr" class="err hidden"></div>
+    </section>
+
+    <section id="vBatchReview" class="hidden">
+      <h2>Check all 逐张检查</h2>
+      <p class="sub">Check each trip against its photo. Tick "skip" for any you don't want to submit. 对照照片检查每一趟，不要的打勾跳过。</p>
+      <div id="batchList"></div>
+      <div class="stack">
+        <button id="btnSendBatch" class="btn btn-dark" type="button">Submit all 全部提交</button>
+        <button id="btnBatchBack" class="btn btn-ghost" type="button">Start again 重新来</button>
+      </div>
+      <div id="batchSendErr" class="err hidden"></div>
+    </section>
+
     <section id="vBusy" class="hidden">
       <div class="busy"><div class="spin" aria-hidden="true"></div>
-        <div><b>Reading photo… 识别中…</b><br><span class="sub">About 10–20 seconds 约 10–20 秒</span></div>
+        <div><b id="busyMsg">Reading photo… 识别中…</b><br><span class="sub" id="busySub">About 10–20 seconds 约 10–20 秒</span></div>
       </div>
     </section>
 
@@ -287,7 +326,7 @@ let INIT = null;
 </script>
 <script>
 const $ = id => document.getElementById(id);
-const views = ['vLogin','vHome','vTrip','vBusy','vReview','vFuel','vWash','vStatus','vDone'];
+const views = ['vLogin','vHome','vTrip','vBatch','vBatchReview','vBusy','vReview','vFuel','vWash','vStatus','vDone'];
 let me = null, opts = null, creds = null, lastResult = null, todayItems = [], route = null, lookTimer = null;
 let current = 'trip', statusType = 'Lorry Repair';
 
@@ -376,6 +415,7 @@ PhotoSet.prototype.clear = function(){ this.photos = []; this.render(); };
 ['cam','gal'].forEach(id => $(id).onchange = e => { if(activeSet) activeSet.add(e.target.files); e.target.value=''; });
 
 const pTrip = new PhotoSet('pTrip', 3, 'tripErr', n => $('btnRead').disabled = !n);
+const pBatch = new PhotoSet('pBatch', 5, 'batchErr', n => $('btnReadBatch').disabled = !n);
 const pFuel = new PhotoSet('pFuel', 2, 'fuelErr', n => $('btnReadFuel').disabled = !n);
 const pWash = new PhotoSet('pWash', 1, 'washErr');
 const pStatus = new PhotoSet('pStatus', 2, 'statusErr');
@@ -408,6 +448,7 @@ $('logout').onclick = () => { store('ff_creds', null); me = creds = null;
 function openModule(m){
   current = m;
   if(m === 'trip'){ pTrip.clear(); clearErr('tripErr'); show('vTrip'); }
+  if(m === 'batch'){ pBatch.clear(); clearErr('batchErr'); show('vBatch'); }
   if(m === 'fuel'){ pFuel.clear(); ['u_litres','u_total'].forEach(i => $(i).value=''); $('u_station').value=''; $('u_date').value = todayIso();
     $('fuelNotes').innerHTML=''; fuelRpl(); clearErr('fuelErr'); show('vFuel'); }
   if(m === 'wash'){ pWash.clear(); $('w_date').value = todayIso(); clearErr('washErr'); show('vWash'); }
@@ -489,6 +530,80 @@ $('btnSend').onclick = async () => {
 };
 function busyBtn(id, on){ const b = $(id); b.disabled = on; b.textContent = on ? 'Submitting… 提交中…' : 'Submit 提交'; }
 
+/* ---------- 批量 ---------- */
+let batch = [];
+function busy(msg, sub){ $('busyMsg').textContent = msg; $('busySub').textContent = sub || ''; }
+$('btnReadBatch').onclick = async () => {
+  clearErr('batchErr');
+  const photos = pBatch.photos.slice();
+  batch = photos.map(p => ({ photo: p, r: null, err: '', sent: false }));
+  show('vBusy');
+  for(let i = 0; i < batch.length; i++){
+    busy('Reading photo ' + (i+1) + ' of ' + batch.length + '… 识别第 ' + (i+1) + ' / ' + batch.length + ' 张…', 'Please wait 请稍等');
+    try{ batch[i].r = await call('recognize', creds.id, creds.pin, strip([batch[i].photo])); }
+    catch(e){ batch[i].err = e.message; batch[i].r = {}; }
+  }
+  busy('Reading photo… 识别中…', 'About 10–20 seconds 约 10–20 秒');
+  renderBatch(); show('vBatchReview');
+};
+function renderBatch(){
+  const box = $('batchList'); box.innerHTML = '';
+  const vl = opts.vehicles || [];
+  batch.forEach((b, i) => {
+    const r = b.r || {};
+    const el = document.createElement('div'); el.className = 'bcard'; b.el = el;
+    const veh = vl.indexOf(r.vehicle) >= 0 ? r.vehicle : (me.vehicle || vl[0] || '');
+    el.innerHTML =
+      '<div class="btop"><img alt="Photo ' + (i+1) + '"><div class="bt"><b>Trip ' + (i+1) + '</b><div class="bnotes"></div></div></div>' +
+      '<div class="row2"><div><label>Lorry 车牌</label><select data-f="vehicle">' + vl.map(v => '<option' + (v === veh ? ' selected' : '') + '>' + v + '</option>').join('') + '</select></div>' +
+      '<div><label>Date 日期</label><input data-f="date" inputmode="numeric" placeholder="DD.MM.YYYY"></div></div>' +
+      '<label>From 出货地点</label><input data-f="from_site" list="sites" autocapitalize="characters">' +
+      '<label>To 送货地点</label><input data-f="to_site" list="sites" autocapitalize="characters">' +
+      '<div class="row2"><div><label>DO / ticket 单号</label><input data-f="do_no" autocapitalize="characters"></div>' +
+      '<div><label>Tons 吨</label><input data-f="tons" inputmode="decimal"></div></div>' +
+      '<label class="bskip"><input type="checkbox" class="skip"> Skip this one 这张不提交</label>' +
+      '<div class="bstat"></div>';
+    el.querySelector('img').src = b.photo.preview;
+    el.querySelector('img').onclick = () => window.open(b.photo.preview);
+    const set = (f, v) => el.querySelector('[data-f="' + f + '"]').value = v == null ? '' : v;
+    set('date', r.date); set('from_site', r.from_site); set('to_site', r.to_site); set('do_no', r.do_no);
+    set('tons', (r.tons === '' || r.tons == null) ? '' : Number(r.tons).toFixed(2));
+    const notes = el.querySelector('.bnotes');
+    if(b.err){ const d = document.createElement('div'); d.className = 'note bad'; d.textContent = b.err + ' Fill in by hand or skip. 请手动填写或跳过。'; notes.appendChild(d); }
+    if(r.duplicate){
+      const d = document.createElement('div'); d.className = 'note bad';
+      d.textContent = 'Already recorded 已经记录过: DO ' + r.duplicate.do_no + ' (' + r.duplicate.vehicle + ', ' + r.duplicate.date + ')';
+      notes.appendChild(d); el.querySelector('.skip').checked = true;
+    }
+    issuesNote(notes, r.issues);
+    box.appendChild(el);
+  });
+}
+$('btnBatchBack').onclick = () => openModule('batch');
+$('btnSendBatch').onclick = async () => {
+  clearErr('batchSendErr');
+  const btn = $('btnSendBatch'); btn.disabled = true;
+  let ok = 0, fail = 0, sentText = [];
+  for(let i = 0; i < batch.length; i++){
+    const b = batch[i], el = b.el, st = el.querySelector('.bstat');
+    if(b.sent) continue;
+    if(el.querySelector('.skip').checked){ st.className = 'bstat'; st.textContent = 'Skipped 已跳过'; continue; }
+    const g = f => el.querySelector('[data-f="' + f + '"]').value;
+    const data = { vehicle:g('vehicle'), date:g('date'), from_site:g('from_site'), to_site:g('to_site'), do_no:g('do_no'), tons:g('tons') };
+    btn.textContent = 'Submitting ' + (i+1) + ' / ' + batch.length + '… 提交中…';
+    try{
+      await call('submitTrip', creds.id, creds.pin, data, strip([b.photo]));
+      b.sent = true; ok++; el.className = 'bcard ok'; st.className = 'bstat okt'; st.textContent = 'Submitted ✓ 已提交';
+      el.querySelectorAll('input,select').forEach(x => x.disabled = true);
+      sentText.push(data.do_no.toUpperCase());
+      addToday('Trip', data.do_no.toUpperCase() + ', ' + Number(data.tons).toFixed(2) + ' tons');
+    }catch(e){ fail++; el.className = 'bcard bad'; st.className = 'bstat errt'; st.textContent = e.message; }
+  }
+  btn.disabled = false; btn.textContent = 'Submit all 全部提交';
+  if(fail){ err('batchSendErr', ok + ' submitted, ' + fail + ' failed. Fix the red ones and press Submit again. ' + ok + ' 趟成功，' + fail + ' 趟失败，改好红色的再按提交。'); }
+  else if(ok){ current = 'batch'; $('doneText').textContent = ok + ' trips submitted 已提交 ' + ok + ' 趟: ' + sentText.join(', '); show('vDone'); }
+};
+
 /* ---------- 油 ---------- */
 function fuelRpl(){ const l = parseFloat($('u_litres').value), t = parseFloat($('u_total').value);
   $('u_rpl').textContent = (l>0 && t>0) ? 'RM ' + (t/l).toFixed(2) : '–'; }
@@ -555,6 +670,23 @@ $('btnSendStatus').onclick = async () => {
   catch(e){ err('statusErr', e.message); }
   finally{ busyBtn('btnSendStatus', false); }
 };
+
+/* ---------- Admin 按钮：用 ?admin=1 打开一次就会记住（?admin=0 取消）---------- */
+(function(){
+  const q = new URLSearchParams(location.search).get('admin');
+  try{ if(q === '1') localStorage.setItem('ff_is_admin', '1'); if(q === '0') localStorage.removeItem('ff_is_admin'); }catch(e){}
+  let on = false; try{ on = localStorage.getItem('ff_is_admin') === '1'; }catch(e){}
+  $('adminTile').classList.toggle('hidden', !on);
+  // 在 App 里：连续点标题「FF Driver」5 下，开 / 关 admin 按钮
+  let taps = 0, timer = null;
+  document.querySelector('header h1').addEventListener('click', () => {
+    taps++; clearTimeout(timer); timer = setTimeout(() => taps = 0, 1500);
+    if(taps >= 5){ taps = 0; on = !on;
+      try{ on ? localStorage.setItem('ff_is_admin', '1') : localStorage.removeItem('ff_is_admin'); }catch(e){}
+      $('adminTile').classList.toggle('hidden', !on);
+      alert(on ? 'Admin mode ON 已开启管理员按钮' : 'Admin mode OFF 已关闭管理员按钮'); }
+  });
+})();
 
 /* ---------- 开始 ---------- */
 const saved = load('ff_creds');

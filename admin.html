@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FF Admin</title>
+<meta name="theme-color" content="#2E3236">
+<meta name="robots" content="noindex">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --asphalt:#2E3236; --asphalt-2:#41464B; --paper:#F7F7F4; --ink:#1F2326;
+  --line:#D5D6D2; --muted:#6B7176; --yellow:#FFC20E; --yellow-ink:#3A2E00;
+  --red:#C21F32; --red-bg:#FBE9EB; --green:#1E7B4F; --green-bg:#E6F3EC; --amber-bg:#FFF4CC;
+  --body:'Barlow',system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --head:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--asphalt);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.45}
+body{padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+.wrap{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+header{color:#fff;padding:18px 20px 14px;display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+header h1{font-family:var(--head);font-weight:700;font-size:30px;line-height:1;margin:0;letter-spacing:.01em}
+header h1 small{display:block;font-family:var(--body);font-weight:400;font-size:14px;color:#C9CDD1;margin-top:4px;letter-spacing:0}
+.plate{font-family:var(--head);font-weight:700;font-size:22px;background:var(--yellow);color:var(--yellow-ink);
+  padding:4px 10px;border-radius:4px;border:2px solid #1f1f1f;white-space:nowrap}
+main{flex:1;background:var(--paper);border-radius:18px 18px 0 0;padding:22px 20px 32px}
+.hidden{display:none!important}
+h2{font-family:var(--head);font-weight:700;font-size:26px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 18px;font-size:15px}
+label{display:block;font-weight:600;font-size:15px;margin:14px 0 6px}
+label .zh{font-weight:400;color:var(--muted);margin-left:6px}
+input{width:100%;font:inherit;font-size:19px;padding:12px 14px;border:2px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+input:focus{outline:none;border-color:var(--asphalt)}
+button{font:inherit;cursor:pointer;border:0}
+.btn{width:100%;padding:16px;border-radius:12px;font-family:var(--head);font-weight:700;font-size:22px;letter-spacing:.02em}
+.btn-dark{background:var(--asphalt);color:#fff}
+.btn-yellow{background:var(--yellow);color:var(--yellow-ink);border:2px solid #1f1f1f}
+.btn-ghost{background:transparent;color:var(--asphalt);border:2px solid var(--line);font-size:19px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,input:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+.stack>*+*{margin-top:12px}
+
+/* 拍照区 */
+.shoot{display:block;width:100%;aspect-ratio:4/3;border-radius:16px;border:3px dashed #9AA0A5;background:#fff;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--asphalt);cursor:pointer}
+.shoot svg{width:64px;height:64px}
+.shoot b{font-family:var(--head);font-size:26px}
+.shoot span{color:var(--muted);font-size:15px}
+.thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.thumb{position:relative;aspect-ratio:3/4;border-radius:10px;overflow:hidden;background:#ddd}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.thumb button{position:absolute;top:6px;right:6px;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;font-size:18px;line-height:30px}
+.addmore{aspect-ratio:3/4;border-radius:10px;border:2px dashed #9AA0A5;background:#fff;color:var(--muted);font-size:15px;display:flex;align-items:center;justify-content:center;text-align:center;padding:6px}
+
+/* 结果：像磅单的纸 */
+.ticket{background:#fff;border:1px solid var(--line);border-radius:12px;padding:6px 16px 16px;margin-bottom:16px;
+  background-image:repeating-linear-gradient(transparent 0 0);position:relative}
+.ticket label{margin-top:12px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tons input{font-family:var(--head);font-size:30px;font-weight:700}
+.monthline{margin-top:12px;color:var(--muted);font-size:15px}
+.monthline b{color:var(--ink)}
+.note{border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:15px}
+.note.warn{background:var(--amber-bg);border-left:5px solid var(--yellow)}
+.note.bad{background:var(--red-bg);border-left:5px solid var(--red);color:#5c0b15}
+.note ul{margin:6px 0 0;padding-left:18px}
+.note b{display:block}
+
+select{width:100%;font:inherit;font-size:19px;padding:12px 14px;border:2px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);appearance:auto}
+select:focus{outline:none;border-color:var(--asphalt)}
+.price{margin-top:16px;border-top:2px dashed var(--line);padding-top:6px}
+.price .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.price .val{font-family:var(--head);font-weight:700;font-size:22px;padding:10px 0 2px}
+.price .lab{font-size:13px;color:var(--muted)}
+.price .tot{display:flex;justify-content:space-between;align-items:baseline;margin-top:12px;padding:10px 12px;background:#F1F2EE;border-radius:10px}
+.price .tot b{font-family:var(--head);font-size:24px}
+.newroute{background:var(--amber-bg);border-radius:10px;padding:10px 12px;margin-top:10px;font-size:15px}
+.checking{color:var(--muted);font-size:14px;margin-top:8px}
+
+/* 状态 */
+.busy{display:flex;flex-direction:column;align-items:center;gap:14px;padding:50px 0;text-align:center}
+.spin{width:52px;height:52px;border-radius:50%;border:6px solid var(--line);border-top-color:var(--yellow);animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:3s}}
+.done{text-align:center;padding:30px 0 10px}
+.done .tick{width:84px;height:84px;border-radius:50%;background:var(--green);margin:0 auto 16px;display:flex;align-items:center;justify-content:center}
+.done .tick svg{width:46px;height:46px}
+.err{background:var(--red-bg);color:#5c0b15;border-radius:10px;padding:12px 14px;margin-top:14px;font-size:15px}
+.today{margin-top:26px;border-top:1px solid var(--line);padding-top:14px}
+.today h3{font-family:var(--head);font-size:20px;margin:0 0 8px}
+.today li{list-style:none;display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #ecece8;font-size:15px}
+.today ul{margin:0;padding:0}
+.linkbtn{background:none;color:#C9CDD1;text-decoration:underline;font-size:14px;padding:4px 0}
+
+/* 主页 */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tile{background:var(--asphalt);color:#fff;border-radius:14px;padding:18px 16px;text-align:left;min-height:118px;display:flex;flex-direction:column;justify-content:space-between}
+.tile b{font-family:var(--head);font-size:24px;line-height:1.05}
+.tile span{font-size:14px;color:#C9CDD1;line-height:1.3}
+.tile.trip{background:var(--yellow);color:var(--yellow-ink);border:2px solid #1f1f1f;grid-column:1/-1;min-height:96px}
+.tile.trip span{color:#5a4a00}
+.back{background:none;color:var(--muted);font-size:15px;padding:0 0 12px;text-decoration:underline}
+.pbox .shoot{aspect-ratio:auto;min-height:150px}
+.galbtn{background:none;color:var(--asphalt);text-decoration:underline;font-size:15px;padding:10px 0 0}
+input[type=date]{min-height:52px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg button{padding:14px 8px;border-radius:10px;border:2px solid var(--line);background:#fff;font-weight:600;font-size:16px;color:var(--ink)}
+.seg button[aria-pressed=true]{background:var(--asphalt);border-color:var(--asphalt);color:#fff}
+.kind{font-size:12px;color:var(--muted);margin-right:6px}
+
+.wrap{max-width:760px}
+.bar{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.seg2{display:flex;gap:8px;margin:6px 0 14px}
+.seg2 button{flex:1;padding:10px;border-radius:10px;border:2px solid var(--line);background:#fff;font-weight:600}
+.seg2 button[aria-pressed=true]{background:var(--asphalt);color:#fff;border-color:var(--asphalt)}
+.count{color:var(--muted);font-size:14px;margin:0 0 10px}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px}
+.card.saved{border-color:var(--green);box-shadow:0 0 0 2px var(--green-bg)}
+.chead{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+.chead b{font-family:var(--head);font-size:20px}
+.tags span{display:inline-block;font-size:12px;padding:2px 8px;border-radius:20px;background:var(--amber-bg);margin-left:4px}
+.route{font-size:15px;margin:4px 0 2px}
+.meta{font-size:13px;color:var(--muted)}
+.meta a{color:var(--asphalt)}
+.grid3{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card label{margin:10px 0 4px;font-size:13px}
+.card input,.card select{font-size:16px;padding:9px 10px}
+.miss{border-color:#E0A800 !important;background:#FFFBEA !important}
+.actions{display:flex;gap:8px;margin-top:12px}
+.actions .btn{font-size:17px;padding:11px}
+.btn-sm{flex:0 0 auto;width:auto;padding:11px 14px}
+.btn-red{background:#fff;color:var(--red);border:2px solid #f0c4ca}
+.more{background:none;color:var(--asphalt);text-decoration:underline;font-size:14px;padding:8px 0 0}
+.cerr{color:var(--red);font-size:14px;margin-top:8px}
+.cok{color:var(--green);font-size:14px;margin-top:8px}
+@media(min-width:620px){.grid3{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>FF Admin<small><a href="./" style="color:#C9CDD1">← Back to app 回到 App</a></small></h1>
+    <button id="logout" class="linkbtn hidden" type="button">Log out 退出</button>
+  </header>
+  <main>
+    <section id="vLogin" class="hidden">
+      <h2>Admin log in 管理员登入</h2>
+      <label for="pw">Password 密码</label>
+      <input id="pw" type="password" autocomplete="current-password">
+      <div style="margin-top:18px"><button id="btnLogin" class="btn btn-dark" type="button">Log in 登入</button></div>
+      <div id="loginErr" class="err hidden"></div>
+    </section>
+
+    <section id="vList" class="hidden">
+      <div class="bar">
+        <div><label for="month">Month 月份</label><input id="month" type="month"></div>
+        <div><label for="veh">Lorry 车牌</label><select id="veh"><option value="">All 全部</option></select></div>
+      </div>
+      <div class="seg2">
+        <button type="button" id="fTodo" aria-pressed="true">To fix 待处理</button>
+        <button type="button" id="fAll" aria-pressed="false">All trips 全部</button>
+      </div>
+      <input id="q" placeholder="Search DO / place 搜单号或地点" style="margin-bottom:12px">
+      <p id="count" class="count"></p>
+      <div id="listErr" class="err hidden"></div>
+      <div id="list"></div>
+    </section>
+  </main>
+</div>
+<datalist id="sites"></datalist>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbxX-1Kb14JpLdrOmrGY6Pqq4cROZOVu2QUEtEG1npM7sUHspNCfFz1ANe4F8fbpmACl/exec';
+const $ = id => document.getElementById(id);
+let PW = '', OPT = null, ROWS = [], onlyTodo = true;
+function store(k,v){ try{ v===null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k, v); }catch(e){} }
+function load(k){ try{ return sessionStorage.getItem(k); }catch(e){ return null; } }
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+async function call(fn, ...args){
+  let r;
+  try{ r = await fetch(API_URL, { method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({fn, args}) }); }
+  catch(e){ throw new Error('No internet connection. 没有网络。'); }
+  if(!r.ok) throw new Error('Server error ' + r.status + '. 系统忙，请再试。');
+  const j = await r.json(); if(!j.ok) throw new Error(String(j.error||'Error').replace(/^Error:\s*/,'')); return j.data;
+}
+function opts(list, val){ return '<option value="">—</option>' + list.map(x => '<option' + (String(x).toUpperCase() === String(val).toUpperCase() ? ' selected' : '') + '>' + esc(x) + '</option>').join(''); }
+
+async function login(pw, silent){
+  try{
+    OPT = await call('adminLogin', pw); PW = pw; store('ff_admin', pw);
+    $('veh').innerHTML = '<option value="">All 全部</option>' + OPT.vehicles.map(v => '<option>' + esc(v) + '</option>').join('');
+    $('sites').innerHTML = (OPT.sites||[]).map(s => '<option value="' + esc(s) + '">').join('');
+    $('vLogin').classList.add('hidden'); $('vList').classList.remove('hidden'); $('logout').classList.remove('hidden');
+    refresh();
+  }catch(e){ store('ff_admin', null); if(!silent){ $('loginErr').textContent = e.message; $('loginErr').classList.remove('hidden'); } }
+}
+$('btnLogin').onclick = () => login($('pw').value);
+$('pw').addEventListener('keydown', e => { if(e.key === 'Enter') $('btnLogin').click(); });
+$('logout').onclick = () => { store('ff_admin', null); location.reload(); };
+
+async function refresh(){
+  $('listErr').classList.add('hidden'); $('count').textContent = 'Loading… 加载中…'; $('list').innerHTML = '';
+  try{ ROWS = await call('adminTrips', PW, $('month').value, onlyTodo); render(); }
+  catch(e){ $('count').textContent = ''; $('listErr').textContent = e.message; $('listErr').classList.remove('hidden'); }
+}
+$('month').addEventListener('change', refresh);
+$('veh').addEventListener('change', render);
+$('q').addEventListener('input', render);
+$('fTodo').onclick = () => { onlyTodo = true; $('fTodo').setAttribute('aria-pressed', true); $('fAll').setAttribute('aria-pressed', false); refresh(); };
+$('fAll').onclick = () => { onlyTodo = false; $('fAll').setAttribute('aria-pressed', true); $('fTodo').setAttribute('aria-pressed', false); refresh(); };
+
+const TODO = { billing:'Billing', material:'Material', price:'Price 价钱' };
+function render(){
+  const v = $('veh').value, q = $('q').value.trim().toUpperCase();
+  const rows = ROWS.filter(t => (!v || t.vehicle.toUpperCase() === v) &&
+    (!q || (t.do_no + ' ' + t.from_site + ' ' + t.to_site).toUpperCase().indexOf(q) >= 0));
+  $('count').textContent = rows.length + (onlyTodo ? ' trips to fix 趟待处理' : ' trips 趟');
+  const box = $('list'); box.innerHTML = '';
+  if(!rows.length && onlyTodo){ box.innerHTML = '<p class="sub">All done for this month ✓ 这个月都处理好了</p>'; return; }
+  rows.forEach(t => box.appendChild(card(t)));
+}
+
+function card(t){
+  const el = document.createElement('div'); el.className = 'card';
+  const miss = k => t.todo.indexOf(k) >= 0 ? ' miss' : '';
+  const photo = (t._doPhotoUrl || '').split(' , ')[0];
+  el.innerHTML =
+    '<div class="chead"><b>' + esc(t.date) + ' · ' + esc(t.vehicle) + '</b><span class="tags">' +
+      t.todo.map(k => '<span>' + TODO[k] + '</span>').join('') + '</span></div>' +
+    '<div class="route">' + esc(t.from_site) + ' → ' + esc(t.to_site) + '</div>' +
+    '<div class="meta">DO ' + esc(t.do_no) + ' · ' + esc(t.tons) + ' t' +
+      (t.revenue ? ' · Revenue RM ' + esc(t.revenue) : '') + (photo ? ' · <a href="' + esc(photo) + '" target="_blank" rel="noopener">📷 Photo</a>' : '') + '</div>' +
+    '<div class="grid3">' +
+      '<div><label>Billing to</label><select data-f="billing_to" class="' + miss('billing') + '">' + opts(OPT.billing, t.billing_to) + '</select></div>' +
+      '<div><label>Material 材料</label><select data-f="material" class="' + miss('material') + '">' + opts(OPT.materials, t.material) + '</select></div>' +
+      '<div><label>Rate / ton</label><input data-f="rate" inputmode="decimal" value="' + esc(t.rate) + '" class="' + miss('price') + '"></div>' +
+      '<div><label>Per trip</label><input data-f="rate_per_trip" inputmode="decimal" value="' + esc(t.rate_per_trip) + '" class="' + miss('price') + '"></div>' +
+    '</div>' +
+    '<button type="button" class="more">Edit tons / DO / place 改吨数、单号、地点</button>' +
+    '<div class="grid3 extra hidden">' +
+      '<div><label>Tons 吨</label><input data-f="tons" inputmode="decimal" value="' + esc(t.tons) + '"></div>' +
+      '<div><label>DO no. 单号</label><input data-f="do_no" value="' + esc(t.do_no) + '"></div>' +
+      '<div><label>From 出货</label><input data-f="from_site" list="sites" value="' + esc(t.from_site) + '"></div>' +
+      '<div><label>To 送货</label><input data-f="to_site" list="sites" value="' + esc(t.to_site) + '"></div>' +
+    '</div>' +
+    '<div class="actions"><button type="button" class="btn btn-dark save">Save 保存</button>' +
+      '<button type="button" class="btn btn-red btn-sm del">Delete 删除</button></div>' +
+    '<div class="msg"></div>';
+  el.querySelector('.more').onclick = () => el.querySelector('.extra').classList.toggle('hidden');
+  const key = { row: t.row, vehicle: t.vehicle, date: t.date, do_no: t.do_no };
+  const msg = (cls, text) => { const m = el.querySelector('.msg'); m.className = 'msg ' + cls; m.textContent = text; };
+  el.querySelector('.save').onclick = async e => {
+    const set = {}; el.querySelectorAll('[data-f]').forEach(i => { if(String(i.value) !== String(t[i.dataset.f] || '')) set[i.dataset.f] = i.value; });
+    if(!Object.keys(set).length){ msg('cok', 'Nothing changed. 没有改动。'); return; }
+    const b = e.target; b.disabled = true; b.textContent = 'Saving… 保存中…';
+    try{
+      const res = await call('adminSave', PW, key, set);
+      Object.assign(t, set); if(set.do_no) t.do_no = set.do_no.toUpperCase(); key.row = res.row; key.do_no = t.do_no;
+      el.classList.add('saved');
+      msg('cok', 'Saved ✓ 已保存' + (res.commission != null && res.commission !== '' ? ' · Commission RM ' + Number(res.commission).toFixed(2) + ' · Revenue RM ' + Number(res.revenue).toFixed(2) : ''));
+      el.querySelectorAll('.miss').forEach(x => { if(x.value) x.classList.remove('miss'); });
+    }catch(err){ msg('cerr', err.message); }
+    finally{ b.disabled = false; b.textContent = 'Save 保存'; }
+  };
+  el.querySelector('.del').onclick = async () => {
+    if(!confirm('Delete this trip?\n删除这一趟？\n\n' + t.date + ' · ' + t.vehicle + ' · DO ' + t.do_no)) return;
+    try{ await call('adminDelete', PW, key); el.remove(); ROWS = ROWS.filter(x => x !== t);
+      $('count').textContent = ROWS.length + ' trips 趟'; }
+    catch(err){ msg('cerr', err.message); }
+  };
+  return el;
+}
+
+(function start(){
+  const d = new Date(); $('month').value = d.getFullYear() + '-' + ('0' + (d.getMonth()+1)).slice(-2);
+  login(load('ff_admin') || '', true).then(() => { if(!OPT){ $('vLogin').classList.remove('hidden'); } });
+})();
+</script>
+</body>
+</html>
